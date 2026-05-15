@@ -7,30 +7,27 @@ const PORT = process.env.PORT || 9000;
 
 app.use(cors({ origin: '*' }));
 
-// Health check
 app.get('/', (req, res) => {
-  res.json({ status: 'NUR signaling server running', peers: 0 });
+  res.json({ status: 'NUR signaling server running' });
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`NUR signaling server running on port ${PORT}`);
+  console.log(`NUR signaling server on port ${PORT}`);
 });
 
 const peerServer = ExpressPeerServer(server, {
-  path: '/nur',
-  allow_discovery: false,
+  path: '/',
   proxied: true,
   alive_timeout: 60000,
-  key: 'nur',
-  concurrent_limit: 5000,
+  key: 'peerjs',
 });
 
 app.use('/nur', peerServer);
 
 peerServer.on('connection', (client) => {
-  console.log(`[NUR] Peer connected: ${client.getId()}`);
+  console.log('Peer connected:', client.getId());
 });
 
 peerServer.on('disconnect', (client) => {
-  console.log(`[NUR] Peer disconnected: ${client.getId()}`);
+  console.log('Peer disconnected:', client.getId());
 });
