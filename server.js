@@ -19,25 +19,32 @@ app.get('/', (req, res) => {
 // ICE servers endpoint — returns TURN credentials
 app.get('/ice-servers', (req, res) => {
   if (!METERED_KEY) {
+    console.log('[NUR] No METERED_KEY set, returning STUN only');
     return res.json([
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
     ]);
   }
 
-  const url = `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_KEY}`;
+  // Correct Metered.ca API endpoint with secretKey parameter
+  const url = `https://${METERED_DOMAIN}/api/v1/turn/credentials?secretKey=${METERED_KEY}`;
+  console.log('[NUR] Fetching ICE servers from Metered...');
+
   https.get(url, (resp) => {
     let data = '';
     resp.on('data', (chunk) => { data += chunk; });
     resp.on('end', () => {
       try {
         const parsed = JSON.parse(data);
+        console.log('[NUR] Got', parsed.length, 'ICE servers from Metered');
         res.json(parsed);
-      } catch {
+      } catch (e) {
+        console.error('[NUR] Metered parse error:', e, 'Raw:', data.slice(0, 200));
         res.json([{ urls: 'stun:stun.l.google.com:19302' }]);
       }
     });
-  }).on('error', () => {
+  }).on('error', (e) => {
+    console.error('[NUR] Metered fetch error:', e.message);
     res.json([{ urls: 'stun:stun.l.google.com:19302' }]);
   });
 });
